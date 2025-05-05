@@ -1,99 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Motor Speed Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Encoder Motor Control</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f8f8f8;
+      background: #eef3f8;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 50px;
+      justify-content: center;
+      padding: 30px;
     }
     .container {
       background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      width: 300px;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
     }
     input[type="range"] {
       width: 100%;
     }
-    .value {
-      font-size: 24px;
+    .value-display {
+      font-size: 20px;
       text-align: center;
       margin-top: 10px;
     }
     button {
       width: 100%;
+      margin-top: 15px;
       padding: 10px;
-      margin-top: 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
       font-size: 16px;
-      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
     }
+    .status {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Motor Speed Control</h2>
-    <button onclick="connect()">Connect Bluetooth</button>
-    <label for="speed">Set Speed (-255 to 255):</label>
-    <input type="range" id="speed" min="-255" max="255" value="0" oninput="updateSpeedLabel()" />
-    <div class="value" id="speedLabel">0</div>
-    <button onclick="sendSpeed()">Send Speed</button>
-    <h3>Current Speed: <span id="currentSpeed">--</span></h3>
+    <h2>Encoder Motor Control</h2>
+    <button onclick="connectBluetooth()">🔗 Connect to ESP32</button>
+
+    <label for="speedRange">Set Speed (-255 to 255):</label>
+    <input type="range" id="speedRange" min="-255" max="255" value="0" oninput="updateSpeedLabel()" />
+    <div class="value-display" id="speedLabel">0</div>
+
+    <button onclick="sendSpeed()">🚀 Send Speed</button>
+
+    <div class="status">Current Speed: <span id="currentSpeed">--</span></div>
   </div>
 
   <script>
     let device, characteristic;
 
-    async function connect() {
+    async function connectBluetooth() {
       try {
         device = await navigator.bluetooth.requestDevice({
           filters: [{ namePrefix: 'ESP32' }],
           optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
         });
+
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
         characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-        characteristic.startNotifications();
-        characteristic.addEventListener("characteristicvaluechanged", handleIncoming);
-        alert("Connected to ESP32!");
+
+        // Start receiving data
+        await characteristic.startNotifications();
+        characteristic.addEventListener("characteristicvaluechanged", handleNotifications);
+
+        alert("✅ Connected to ESP32 via Bluetooth");
       } catch (error) {
-        alert("Failed to connect: " + error);
+        alert("❌ Connection failed: " + error);
       }
     }
 
     function updateSpeedLabel() {
-      const val = document.getElementById("speed").value;
+      const val = document.getElementById("speedRange").value;
       document.getElementById("speedLabel").innerText = val;
     }
 
     function sendSpeed() {
       if (!characteristic) {
-        alert("Connect first!");
+        alert("❗ Connect to ESP32 first.");
         return;
       }
-      const speed = document.getElementById("speed").value;
+      const speed = document.getElementById("speedRange").value;
+      const message = `SPD:${speed}\n`;
       const encoder = new TextEncoder();
-      characteristic.writeValue(encoder.encode(`SPD:${speed}\n`));
+      characteristic.writeValue(encoder.encode(message));
     }
 
-    function handleIncoming(event) {
+    function handleNotifications(event) {
       const decoder = new TextDecoder();
-      const value = decoder.decode(event.target.value);
-      if (value.startsWith("CUR:")) {
-        document.getElementById("currentSpeed").innerText = value.substring(4).trim();
+      const data = decoder.decode(event.target.value);
+      if (data.startsWith("CUR:")) {
+        const speed = data.substring(4).trim();
+        document.getElementById("currentSpeed").innerText = speed;
       }
     }
   </script>
