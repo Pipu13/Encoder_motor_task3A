@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Encoder Motor Control</title>
   <style>
     body {
@@ -85,7 +86,6 @@
         const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
         characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
 
-        // Start receiving data
         await characteristic.startNotifications();
         characteristic.addEventListener("characteristicvaluechanged", handleNotifications);
 
@@ -106,7 +106,7 @@
         return;
       }
       const speed = document.getElementById("speedRange").value;
-      const message = `SPD:${speed}\n`;
+      const message = `SPD:${speed}`;
       const encoder = new TextEncoder();
       characteristic.writeValue(encoder.encode(message));
     }
