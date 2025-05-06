@@ -77,7 +77,7 @@
     async function connectBluetooth() {
       try {
         device = await navigator.bluetooth.requestDevice({
-          filters: [{ namePrefix: 'ESP32' }],
+          filters: [{ namePrefix: 'Encoder_motor_task3A' }],
           optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
         });
 
